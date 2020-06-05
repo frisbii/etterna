@@ -203,13 +203,13 @@ local debugGroups = {
 		StamMod = true,
     },
     {   -- Group 5
-    TotalPatternMod = true,
+        TotalPatternMod = true,
 		Roll = true,
 		WideRangeRoll = true,
 		WideRangeJumptrill = true,
 	},
     {   -- Group 6
-    TotalPatternMod = true,
+        TotalPatternMod = true,
         Chaos = true,
         FlamJam = true,
         TheThing = true,
@@ -235,9 +235,9 @@ local debugGroups = {
     },
 	{   -- Group 8
         OHJumpMod = true,
-        --OHJPropComp = true,
-        --OHJSeqComp = true,
-        --OHJBaseProp = true,
+        OHJPropComp = true,
+        OHJSeqComp = true,
+        OHJBaseProp = true,
 	},
     {   -- Group 9
         OHJMaxSeq = true,
@@ -245,14 +245,14 @@ local debugGroups = {
         OHJHTaps = true,
     },
     {   -- Group 10
-
+        TotalPatternMod = true,
     },
-    TotalPatternMod = true,
     {   -- Group 11
-
+        Chaos = true,
     },
     [12] = { -- Group 12
-
+        TheThing = true,
+        TheThing2 = true,
     },
 }
 
@@ -644,6 +644,7 @@ o[#o + 1] = LoadFont("Common Normal") .. {
     this list has order and should match the enums used
 ]]
 local modnames = {
+    -- CalcPatternMod shortnames
     "stl",
     "str",
     "jsl",
@@ -706,6 +707,8 @@ local modnames = {
     "wrar",
     "ttl",
     "ttr",
+    "tt2l",
+    "tt2r",
     "rml",
     "rmr",
     "rll",
@@ -730,6 +733,12 @@ local modnames = {
     "rposr",
     "rpjl",
     "rpjr",
+    "totpml",
+    "totpmr",
+
+
+    -- CalcPatternMods above this line
+    -- CalcDebugMisc mods
     "sl",
     "sr",
     "jksl",
@@ -739,6 +748,7 @@ local modnames = {
 -- this list has order
 -- try to keep it exactly in the order of the enums used :)
 local modColors = {
+    -- CalcDebugPattern Colors
     color(".3,1.3,1"),      -- cyan			= stream left
     color(".3,1.3,0.9"),	-- cyan				 (right)
 	color("1,0,1"),     	-- purple       = jumpstream left
@@ -801,6 +811,8 @@ local modColors = {
     color("0.7,1,0.1"),		-- leme				 (right)
     color("0,0.8,1"),		-- light blue	= thething left
     color("0,0.8,1"),		-- light blue		 (right)
+    color("0,0.6,1"),       -- darkish blue = thething2 left
+    color("0,0.6,1"),       --                  (right)
 	color("0.2,1,1"),		-- light blue	= ranman left
 	color("0.2,1,1"),		-- light blue		 (right)
 	color("1,1,1"),			-- rl
@@ -824,7 +836,13 @@ local modColors = {
 	color("1,1,1"),			-- rpos
 	color("1,1,1"),
 	color("1,1,1"),			-- rpj
-	color("1,1,1"),
+    color("1,1,1"),
+    color("0.7,1,0"),		-- lime			= totalpatternmod left
+    color("0.7,1,0"),		-- lime				 (right)
+
+
+    -- place CalcPatternMod Colors above this line
+    -- MISC MODS START HERE
     color("0.7,1,0"),		-- lime			= stam left
     color("0.7,1,0"),		-- lime				 (right)
     color("0.7,1,0"),		-- lime			= jackstam left

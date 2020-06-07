@@ -6848,8 +6848,9 @@ struct TheGreatBazoinkazoinkInTheSky
 					if (is_cj || was_cj || is_scj) {
 
 						the_simpsons.push_back(max(
-						  75.F,
-						  min(_mhi->cc_ms_any * pewpew, _mhi->tc_ms * pewpew)));
+						  50.F,
+							pow(min(_mhi->cc_ms_any * pewpew, _mhi->tc_ms * pewpew)	, 1.3F) / 4.02F
+						  ));
 					}
 
 					last_last_row_count = row_count;
@@ -7651,7 +7652,7 @@ MinaSDCalcDebug(const vector<NoteInfo>& NoteInfo,
 }
 #pragma endregion
 
-int mina_calc_version = 381;
+int mina_calc_version = 381231;
 auto
 GetCalcVersion() -> int
 {

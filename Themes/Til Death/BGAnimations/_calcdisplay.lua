@@ -174,6 +174,7 @@ local debugGroups = {
     {   -- Group 1
         Stream = true,
         OHTrill = true,
+        VOHTrill = true,
 		OHJumpMod = true,
 		Roll = true,
         StamMod = true,
@@ -196,7 +197,7 @@ local debugGroups = {
         CJ = true,
         CJS = true,
         CJJ = true,
-        CJQuad = true,
+        CJDensity = true,
         CJOHJump = true,
         --CJOHJPropComp = true,
         --CJOHJSeqComp = true,
@@ -249,6 +250,7 @@ local debugGroups = {
     },
     {   -- Group 11
         Chaos = true,
+        Roll = true,
     },
     [12] = { -- Group 12
         TheThing = true,
@@ -434,7 +436,7 @@ local function yetAnotherInputCallback(event)
         end
 
         local CtrlPressed = INPUTFILTER:IsControlPressed()
-        if tonumber(event.char) and CtrlPressed then
+        if tonumber(event.char) and CtrlPressed and enabled then
             local num = tonumber(event.char)
             if num == 0 then
                 switchSSRGraph()
@@ -665,8 +667,8 @@ local modnames = {
     "cjsr",
     "cjjl",
     "cjjr",
-    "cjql",
-    "cjqr",
+    "cjdl",
+    "cjdr",
     "ohjl",
     "ohjr",
     "ohjbpr",
@@ -687,12 +689,14 @@ local modnames = {
     "cjohjpcr",
     "cjohjscl",
     "cjohjscr",
-    "anchl",
-    "anchr",
+    "blncl",
+    "blncr",
     "rolll",
     "rollr",    
     "ohtl",
     "ohtr",
+    "vohtl",
+    "vohtr",
     "cl",
     "cr",
     "fcl",
@@ -738,7 +742,8 @@ local modnames = {
 
 
     -- CalcPatternMods above this line
-    -- CalcDebugMisc mods
+    -- CalcDebugMisc mods meant for only the top graph:
+    -- (this list should match the miscToUpperMods list)
     "sl",
     "sr",
     "jksl",
@@ -769,7 +774,7 @@ local modColors = {
 	color("0,0.8,1"),		-- light blue		 (right)
 	color("1,0,0"),			-- red			= chordjack jack
 	color("1,0.2,0"),		-- orange1			 (right)
-	color("1,1,0"),			-- yellow		= cjquad left
+	color("1,1,0"),			-- yellow		= cjdensity left
     color("1,1,0"),			-- yellow			 (right)
     color("1,0.4,0"),       -- orange2		= ohjump left
     color("1,0.4,0"), 		-- orange2        	 (right)
@@ -797,6 +802,8 @@ local modColors = {
     color("0.3,0.9,0.3"),   -- light green       (right)
     color(".8,1.3,1"),      -- whiteblue	= oht left
     color(".8,1.3,0.9"),	-- whiteblue		 (right)
+    color("1,0,1"),         -- purple       = voht left
+    color("1,0,1"),         -- purple            (right)
     color(".4,0.9,0.3"),    -- green		= chaos left
     color(".4,0.9,0.3"),	-- green			 (right)
     color(".4,0.5,0.59"),   -- teal			= flamjam left
@@ -842,7 +849,7 @@ local modColors = {
 
 
     -- place CalcPatternMod Colors above this line
-    -- MISC MODS START HERE
+    -- MISC MODS START HERE (same order as miscToUpperMods)
     color("0.7,1,0"),		-- lime			= stam left
     color("0.7,1,0"),		-- lime				 (right)
     color("0.7,1,0"),		-- lime			= jackstam left
@@ -1174,9 +1181,7 @@ do -- scoping
     for i, mod in pairs(CalcDiffValue) do
         local modname = shortenEnum("CalcDiffValue", mod)
         for h = 1,2 do
-            if i == 2 or i == 4 then -- only these for now
                 o[#o+1] = bottomGraphLineMSD(modname, skillsetColors[(i * 2) - (h % 2)], h)
-            end
         end
     end
     i = 1

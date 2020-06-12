@@ -187,21 +187,12 @@ struct TheGreatBazoinkazoinkInTheSky
 	{
 		setup_agnostic_pmods();
 
-		// don't use s_init here, we know the first row is always 0.F and
-		// therefore the first interval starts at 0.F
-		float row_time = 0.F;
-		unsigned row_notes = 0;
-		int row_count = 0;
+		for (int itv = 0; itv < numitv; ++itv) {
+			for (int row = 0; row < itv_size.at(itv); ++row) {
+				const auto& ri = adj_ni.at(itv).at(row);
 
-		for (int itv = 0; itv < _itv_rows.size(); ++itv) {
-
-			// run the row by row construction for interval info
-			for (auto& row : _itv_rows[itv]) {
-				row_time = _ni[row].rowTime / _rate;
-				row_notes = _ni[row].notes;
-				row_count = column_count(row_notes);
-
-				(*_mri)(*_last_mri, _mitvi, row_time, row_count, row_notes);
+				(*_mri)(
+				  *_last_mri, _mitvi, ri.row_time, ri.row_count, ri.row_notes);
 
 				advance_agnostic_sequencing();
 
@@ -266,7 +257,8 @@ struct TheGreatBazoinkazoinkInTheSky
 	{
 		PatternMods::set_dependent(hand, _ohj._pmod, _ohj(_mitvhi), itv);
 		PatternMods::set_dependent(hand, _oht._pmod, _oht(_mitvhi._itvhi), itv);
-		PatternMods::set_dependent(hand, _voht._pmod, _voht(_mitvhi._itvhi), itv);
+		PatternMods::set_dependent(
+		  hand, _voht._pmod, _voht(_mitvhi._itvhi), itv);
 		PatternMods::set_dependent(hand, _bal._pmod, _bal(_mitvhi._itvhi), itv);
 		PatternMods::set_dependent(
 		  hand, _roll._pmod, _roll(_mitvhi._itvhi, _seq), itv);
@@ -275,7 +267,8 @@ struct TheGreatBazoinkazoinkInTheSky
 		PatternMods::set_dependent(hand, _rm._pmod, _rm(), itv);
 		PatternMods::set_dependent(hand, _wrb._pmod, _wrb(_mitvhi._itvhi), itv);
 		PatternMods::set_dependent(hand, _wrr._pmod, _wrr(_mitvhi._itvhi), itv);
-		PatternMods::set_dependent(hand, _wrjt._pmod, _wrjt(_mitvhi._itvhi), itv);
+		PatternMods::set_dependent(
+		  hand, _wrjt._pmod, _wrjt(_mitvhi._itvhi), itv);
 		PatternMods::set_dependent(
 		  hand, _wra._pmod, _wra(_mitvhi._itvhi, _seq._as), itv);
 	}
@@ -375,19 +368,19 @@ struct TheGreatBazoinkazoinkInTheSky
 			// also need to have 2 itvhandinfo objects, or just for general
 			// performance (though the redundancy on this pass vs agnostic
 			// the pass is limited to like... a couple floats and 2 ints)
-			for (int itv = 0; itv < _itv_rows.size(); ++itv) {
 
-				// run the row by row construction for interval info
-				for (auto& row : _itv_rows[itv]) {
+			for (int itv = 0; itv < numitv; ++itv) {
+				for (int row = 0; row < itv_size.at(itv); ++row) {
+					const auto& ri = adj_ni.at(itv).at(row);
 
-					// derive and set the most basic information, from which
-					// everything else will be derived
-					row_time = _ni[row].rowTime / _rate;
-					row_notes = _ni[row].notes;
-					row_count = column_count(row_notes);
+					row_time = ri.row_time;
+					row_notes = ri.row_notes;
+					row_count = ri.row_count;
 
 					// don't like having this here
 					any_ms = ms_from(row_time, last_row_time);
+
+					assert(any_ms > 0.F);
 
 					ct = determine_col_type(row_notes, ids);
 

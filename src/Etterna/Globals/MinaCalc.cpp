@@ -58,27 +58,6 @@ static const std::array<float, NUM_Skillset> basescalers = {
 	0.F, 0.97F, 0.92F, 0.83F, 0.94F, 0.95F, 0.91F, 0.9F
 };
 
-static thread_local int numitv = 0;
-
-void
-Calc::TotalMaxPoints()
-{
-	MaxPoints = 0;
-	for (int i = 0; i < numitv; i++) {
-		MaxPoints += l_hand.v_itvpoints[i] + r_hand.v_itvpoints[i];
-	}
-}
-
-void
-Hand::InitPoints(const Finger& f1, const Finger& f2)
-{
-	v_itvpoints.clear();
-	for (int ki_is_rising = 0; ki_is_rising < f1.size(); ++ki_is_rising) {
-		v_itvpoints.emplace_back(f1[ki_is_rising].size() +
-								 f2[ki_is_rising].size());
-	}
-}
-
 inline void
 InitBaseDiff(const int& h, Finger& f1, Finger& f2)
 {
@@ -340,6 +319,25 @@ Calc::CalcMain(const vector<NoteInfo>& NoteInfo,
 	return yo_momma;
 }
 
+void
+Calc::TotalMaxPoints()
+{
+	MaxPoints = 0;
+	for (int i = 0; i < numitv; i++) {
+		MaxPoints += l_hand.v_itvpoints[i] + r_hand.v_itvpoints[i];
+	}
+}
+
+void
+Hand::InitPoints(const Finger& f1, const Finger& f2)
+{
+	v_itvpoints.clear();
+	for (int ki_is_rising = 0; ki_is_rising < f1.size(); ++ki_is_rising) {
+		v_itvpoints.emplace_back(f1[ki_is_rising].size() +
+								 f2[ki_is_rising].size());
+	}
+}
+
 auto
 Calc::InitializeHands(const vector<NoteInfo>& NoteInfo,
 					  float music_rate,
@@ -347,6 +345,8 @@ Calc::InitializeHands(const vector<NoteInfo>& NoteInfo,
 {
 	numitv = static_cast<int>(
 	  std::ceil(NoteInfo.back().rowTime / (music_rate * IntervalSpan)));
+
+	fastwalk(NoteInfo, music_rate, offset);
 
 	bool junk_file_mon = false;
 	ProcessedFingers fingers;
@@ -820,7 +820,7 @@ MinaSDCalcDebug(const vector<NoteInfo>& NoteInfo,
 	}
 }
 
-int mina_calc_version = 395;
+int mina_calc_version = 396;
 auto
 GetCalcVersion() -> int
 {

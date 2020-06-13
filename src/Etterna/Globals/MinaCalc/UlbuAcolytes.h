@@ -120,7 +120,8 @@ static thread_local int numitv = 0;
 struct RowInfo
 {
 	unsigned row_notes = 0U;
-	int row_count = 0U;
+	int row_count = 0;
+	std::array<int, num_hands> hand_counts = { 0, 0 };
 	float row_time = 0.F;
 };
 
@@ -130,6 +131,10 @@ static thread_local std::
 
 static thread_local std::array<int, max_intervals> itv_size;
 static const float interval_span = 0.5F;
+
+// Point allotment for each interval
+static thread_local std::array<std::array<int, max_intervals>, num_hands>
+  itv_points;
 
 // converts time to interval index, if there's an offset to add or a rate to
 // scale by, it should be done prior
@@ -155,13 +160,13 @@ fastwalk(const vector<NoteInfo>& ni,
 	if (numitv >= max_intervals)
 		return true;
 
-	//// for various reasons we actually have to do this, scan the file and make
-	//// sure each successive row time is greater than the last
-	// for (int i = 1; i < ni.size(); ++i) {
-	//	if (ni.at(i - 1).rowTime >= ni.at(i).rowTime) {
-	//		return true;
-	//	}
-	//}
+	// for various reasons we actually have to do this, scan the file and make
+	// sure each successive row time is greater than the last
+	for (int i = 1; i < ni.size(); ++i) {
+		if (ni.at(i - 1).rowTime >= ni.at(i).rowTime) {
+			return true;
+		}
+	}
 
 	// now we can attempt to construct notinfo that includes column count and
 	// rate adjusted row time, both of which are derived data that both pmod
@@ -205,9 +210,30 @@ fastwalk(const vector<NoteInfo>& ni,
 			row_counter = 0;
 		}
 
-		adj_ni.at(itv).at(row_counter).row_notes = ri.notes;
-		adj_ni.at(itv).at(row_counter).row_count = column_count(ri.notes);
-		adj_ni.at(itv).at(row_counter).row_time = scaled_time;
+		auto& nri = adj_ni.at(itv).at(row_counter);
+
+		nri.row_notes = ri.notes;
+		nri.row_count = column_count(ri.notes);
+		nri.row_time = scaled_time;
+
+		int left = 0;
+		int right = 0;
+
+		if (ri.notes & 1) {
+			++left;
+		}
+		if (ri.notes & 2) {
+			++left;
+		}
+		if (ri.notes & 4) {
+			++right;
+		}
+		if (ri.notes & 8) {
+			++right;
+		}
+
+		nri.hand_counts[left_hand] = left;
+		nri.hand_counts[right_hand] = right;
 
 		++row_counter;
 	}
@@ -224,6 +250,6 @@ fastwalk(const vector<NoteInfo>& ni,
 
 	// make sure we only set up to the interval/row we actually use
 	numitv = itv + 1;
-	
+
 	return false;
 }

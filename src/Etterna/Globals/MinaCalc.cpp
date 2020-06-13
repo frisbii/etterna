@@ -58,95 +58,6 @@ static const std::array<float, NUM_Skillset> basescalers = {
 	0.F, 0.97F, 0.92F, 0.83F, 0.94F, 0.95F, 0.91F, 0.9F
 };
 
-inline void
-InitBaseDiff(const int& h, Finger& f1, Finger& f2)
-{
-	for (int i = 0; i < f1.size(); i++) {
-		float nps = 1.6F * static_cast<float>(f1[i].size() + f2[i].size());
-		soap.at(h).at(NPSBase).at(i) = finalscaler * nps;
-	}
-}
-
-auto
-Calc::ProcessFinger(const vector<NoteInfo>& NoteInfo,
-					unsigned int t,
-					float music_rate,
-					float offset,
-					bool& joke_file_mon) -> Finger
-{
-	// optimization, just allocate memory here once and recycle this vector
-	vector<float> temp_queue(max_rows_for_single_interval);
-	vector<int> temp_queue_two(max_rows_for_single_interval);
-	unsigned int row_counter = 0;
-	unsigned int row_counter_two = 0;
-
-	if (numitv >= max_intervals) {
-		joke_file_mon = true;
-		return {};
-	}
-
-	int Interval = 0;
-	float last = -5.F;
-	Finger AllIntervals(numitv, vector<float>());
-	if (t == 0) {
-		nervIntervals = vector<vector<int>>(numitv, vector<int>());
-	}
-	unsigned int column = 1U << t;
-
-	for (int i = 0; i < NoteInfo.size(); i++) {
-		// we have hardcoded mem allocation for up to 100 nps, bail out on the
-		// entire file calc if we exceed that
-		if (row_counter >= max_rows_for_single_interval ||
-			row_counter_two >= max_rows_for_single_interval) {
-			// yes i know this is jank
-			joke_file_mon = true;
-			return {};
-		}
-		float scaledtime = (NoteInfo[i].rowTime / music_rate) + offset;
-
-		while (scaledtime > static_cast<float>(Interval + 1) * IntervalSpan) {
-			// dump stored values before iterating to new interval
-			// we're in a while loop to skip through empty intervals
-			// so check the counter to make sure we didn't already assign
-			if (row_counter > 0) {
-				AllIntervals[Interval].resize(row_counter);
-				for (unsigned int n = 0; n < row_counter; ++n) {
-					AllIntervals[Interval][n] = temp_queue[n];
-				}
-			}
-
-			if (row_counter_two > 0) {
-				nervIntervals[Interval].resize(row_counter_two);
-				for (unsigned int n = 0; n < row_counter_two; ++n) {
-					nervIntervals[Interval][n] = temp_queue_two[n];
-				}
-			}
-
-			// reset the counter and iterate interval
-			row_counter = 0;
-			row_counter_two = 0;
-			++Interval;
-		}
-
-		if ((NoteInfo[i].notes & column) != 0U) {
-			// log all rows for this interval in pre-allocated mem
-			// this is clamped to stop 192nd single minijacks from having an
-			// outsize influence on anything, they aren't actually that hard in
-			// isolation due to hit windows
-			temp_queue[row_counter] =
-			  CalcClamp(1000.F * (scaledtime - last), 40.F, 5000.F);
-			++row_counter;
-			last = scaledtime;
-		}
-
-		if (t == 0 && NoteInfo[i].notes != 0) {
-			temp_queue_two[row_counter_two] = i;
-			++row_counter_two;
-		}
-	}
-	return AllIntervals;
-}
-
 auto
 Calc::CalcMain(const vector<NoteInfo>& NoteInfo,
 			   float music_rate,
@@ -324,17 +235,7 @@ Calc::TotalMaxPoints()
 {
 	MaxPoints = 0;
 	for (int i = 0; i < numitv; i++) {
-		MaxPoints += l_hand.v_itvpoints[i] + r_hand.v_itvpoints[i];
-	}
-}
-
-void
-Hand::InitPoints(const Finger& f1, const Finger& f2)
-{
-	v_itvpoints.clear();
-	for (int ki_is_rising = 0; ki_is_rising < f1.size(); ++ki_is_rising) {
-		v_itvpoints.emplace_back(f1[ki_is_rising].size() +
-								 f2[ki_is_rising].size());
+		MaxPoints += itv_points[left_hand].at(i) + itv_points[right_hand].at(i);
 	}
 }
 
@@ -344,32 +245,19 @@ Calc::InitializeHands(const vector<NoteInfo>& NoteInfo,
 					  float offset) -> bool
 {
 	numitv = static_cast<int>(
-	  std::ceil(NoteInfo.back().rowTime / (music_rate * IntervalSpan)));
+	  std::ceil(NoteInfo.back().rowTime / (music_rate * interval_span)));
 
-	fastwalk(NoteInfo, music_rate, offset);
+	bool junk_file_mon = fastwalk(NoteInfo, music_rate, offset);
 
-	bool junk_file_mon = false;
-	ProcessedFingers fingers;
-	for (auto t : zto3) {
-		fingers.emplace_back(
-		  ProcessFinger(NoteInfo, t, music_rate, offset, junk_file_mon));
-
-		// don't bother with this file
-		if (junk_file_mon) {
-			return false;
-		}
+	// don't bother with this file
+	if (junk_file_mon) {
+		return false;
 	}
 
 	TheGreatBazoinkazoinkInTheSky ulbu_that_which_consumes_all;
-	ulbu_that_which_consumes_all.recieve_sacrifice(NoteInfo);
+	ulbu_that_which_consumes_all.recieve_sacrifice();
 
-	InitBaseDiff(left_hand, fingers[0], fingers[1]);
-	InitBaseDiff(right_hand, fingers[2], fingers[3]);
-
-	l_hand.InitPoints(fingers[0], fingers[1]);
-	r_hand.InitPoints(fingers[2], fingers[3]);
-
-	ulbu_that_which_consumes_all(nervIntervals, music_rate);
+	ulbu_that_which_consumes_all();
 
 	l_hand.InitAdjDiff();
 	r_hand.InitAdjDiff();
@@ -693,7 +581,7 @@ Hand::CalcInternal(float& gotpoints,
 
 	//	for (int i = 0; i < v.size(); ++i) {
 	//		if (x < v[i]) {
-	//			auto pts = static_cast<float>(v_itvpoints[i]);
+	//			auto pts = static_cast<float>(itv_points[i]);
 	//			float lostpoints =
 	//			  (pts - (pts * fastpow(x / v[i], powindromemordniwop)));
 	//			gotpoints -= lostpoints;
@@ -702,8 +590,8 @@ Hand::CalcInternal(float& gotpoints,
 	//	}
 	//} else {
 	for (int i = 0; i < numitv; ++i) {
-		if (x < v[i]) {
-			auto pts = static_cast<float>(v_itvpoints[i]);
+		if (x < v.at(i)) {
+			auto pts = static_cast<float>(itv_points.at(hi).at(i));
 			gotpoints -= (pts - (pts * fastpow(x / v[i], powindromemordniwop)));
 		}
 	}

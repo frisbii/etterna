@@ -50,10 +50,6 @@ bool debug_lmao;
 struct TheGreatBazoinkazoinkInTheSky
 {
 	bool dbg = false;
-
-	vector<NoteInfo> _ni;
-	vector<vector<int>> _itv_rows;
-	float _rate = 0.F;
 	int hand = 0;
 
 	// to generate these
@@ -108,7 +104,7 @@ struct TheGreatBazoinkazoinkInTheSky
 	// so we can apply them here
 	diffz _diffz;
 
-	inline void recieve_sacrifice(const vector<NoteInfo>& ni)
+	inline void recieve_sacrifice()
 	{
 #ifndef RELWITHDEBINFO
 #if NDEBUG
@@ -130,19 +126,10 @@ struct TheGreatBazoinkazoinkInTheSky
 		_mri = std::make_unique<metaRowInfo>();
 		_last_mhi = std::make_unique<metaHandInfo>();
 		_mhi = std::make_unique<metaHandInfo>();
-
-		// doesn't change with offset or anything, and we may do
-		// multi-passes at some point
-		_ni = ni;
 	}
 
-	inline void operator()(const vector<vector<int>>& itv_rows,
-						   const float& rate)
+	inline void operator()()
 	{
-		// set interval/offset pass specific stuff
-		_itv_rows = itv_rows;
-		_rate = rate;
-
 		run_agnostic_pmod_loop();
 		run_dependent_pmod_loop();
 	}
@@ -209,10 +196,10 @@ struct TheGreatBazoinkazoinkInTheSky
 			_mitvi.handle_interval_end();
 		}
 
-		PatternMods::run_agnostic_smoothing_pass(_itv_rows.size());
+		PatternMods::run_agnostic_smoothing_pass(numitv);
 
 		// copy left -> right for agnostic mods
-		PatternMods::bruh_they_the_same(_itv_rows.size());
+		PatternMods::bruh_they_the_same(numitv);
 	}
 
 #pragma endregion
@@ -356,7 +343,47 @@ struct TheGreatBazoinkazoinkInTheSky
 			col_type ct = col_init;
 			full_hand_reset();
 
-			Smooth(soap.at(hand).at(NPSBase), 0.F, _itv_rows.size());
+			// asdgasgearg
+
+			// keep track of notes in a window
+			CalcMovingWindow<int> notesbruh;
+
+			// basically using this to know what was there 6 rows ago
+			CalcMovingWindow<float> timebruh;
+			timebruh.fill(s_init);
+
+			vector<float> nps;
+			// another loop cause we want to smooth npsbase before merging it
+			// with tech maybe
+			for (int itv = 0; itv < numitv; ++itv) {
+				nps.clear();
+				int pts = 0;
+
+				for (int row = 0; row < itv_size.at(itv); ++row) {
+					const auto& ri = adj_ni.at(itv).at(row);
+
+					notesbruh(ri.hand_counts.at(hand));
+					timebruh(ri.row_time);
+
+					pts += ri.hand_counts.at(hand) * 2;
+
+					auto wn =
+					  notesbruh.get_mean_of_window(max_moving_window_size);
+					float wt = ri.row_time - timebruh[0];
+					assert(wt > 0.F);
+					nps.push_back(wn / wt);
+				}
+				if (nps.empty()) {
+					soap.at(hand).at(NPSBase).at(itv) = 0.F;
+				} else {
+					soap.at(hand).at(NPSBase).at(itv) =
+					  mean(nps) * 2.F * finalscaler * 2.F;
+				}
+
+				itv_points.at(hand).at(itv) = pts;
+			}
+
+			Smooth(soap.at(hand).at(NPSBase), 0.F, numitv);
 
 			// so we are technically doing this again (twice) and don't to
 			// be doing it, but it makes debugging much less of a pita if we
@@ -435,7 +462,7 @@ struct TheGreatBazoinkazoinkInTheSky
 
 				handle_dependent_interval_end(itv);
 			}
-			PatternMods::run_dependent_smoothing_pass(_itv_rows.size());
+			PatternMods::run_dependent_smoothing_pass(numitv);
 
 			// smoothing has been built into the construction process so we
 			// probably don't need these anymore? maybe ms smooth if necessary,

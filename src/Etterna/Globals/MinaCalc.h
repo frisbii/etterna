@@ -13,8 +13,6 @@
 #endif
 
 typedef std::vector<std::vector<float>> MinaSD;
-using Finger = std::vector<std::vector<float>>;
-using ProcessedFingers = std::vector<Finger>;
 
 class Hand
 {
@@ -26,9 +24,6 @@ class Hand
 	// vector than what we apply the stam mod to, so calculate those as well.
 	// Yes this makes sense.
 	void InitAdjDiff();
-
-	// Totals up the points available for each interval
-	void InitPoints(const Finger& f1, const Finger& f2);
 
 	/*	The stamina model works by asserting a minimum difficulty relative to
 	the supplied player skill level for which the player's stamina begins to
@@ -50,9 +45,6 @@ class Hand
 					  int ss,
 					  bool stam,
 					  bool debug = false);
-
-	// Point allotment for each interval
-	std::vector<int> v_itvpoints;
 
 	std::vector<std::vector<std::vector<float>>> debugValues;
 
@@ -84,21 +76,6 @@ class Calc
 						 float music_rate,
 						 float offset) -> bool;
 
-	/*	Slices the track into predefined intervals of time. All taps within each
-	interval have their ms values from the last note in the same column
-	calculated and the result is spit out
-	into a new Finger object, or vector of vectors of floats (ms from last note
-	in the track). */
-	auto ProcessFinger(const std::vector<NoteInfo>& NoteInfo,
-					   unsigned int t,
-					   float music_rate,
-					   float offset,
-					   bool& joke_file_mon) -> Finger;
-
-	// Derivative calc params
-	int MaxPoints = 0;	   // Total points achievable in the file
-	void TotalMaxPoints(); // Counts up the total points and assigns it
-
 	/*	Returns estimate of player skill needed to achieve score goal on chart.
 	 *  The player_skill parameter gives an initial guess and floor for player
 	 * skill. Resolution relates to how precise the answer is. Additional
@@ -109,14 +86,13 @@ class Calc
 				int ss, // skillset
 				bool stamina,
 				bool debugoutput = false) -> float;
-
 	Hand l_hand;
 	Hand r_hand;
 
   private:
-	std::vector<std::vector<int>> nervIntervals;
-
-	const float IntervalSpan = 0.5F; // Intervals of time we slice the chart at
+	// Derivative calc params
+	int MaxPoints = 0;	 // Total points achievable in the file
+	void TotalMaxPoints(); // Counts up the total points and assigns it
 };
 
 MINACALC_API auto
